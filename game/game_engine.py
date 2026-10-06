@@ -4,6 +4,8 @@ from game.text_box import TextBox
 
 
 class GameEngine:
+    QUESTION_DURATION_SECONDS = 10
+
     def __init__(self, width, height):
         self.width = width
         self.height = height
@@ -36,6 +38,8 @@ class GameEngine:
             self.num_a, self.num_b = self.num_b, self.num_a
 
         self.input_box.clear()
+        self.question_started_at = pygame.time.get_ticks()
+        self.time_remaining = self.QUESTION_DURATION_SECONDS
 
     def compute_expected_answer(self):
         if self.operator == "+":
@@ -75,7 +79,14 @@ class GameEngine:
                 self.submit_answer()
 
     def update(self):
-        pass
+        elapsed = (pygame.time.get_ticks() - self.question_started_at) / 1000
+        self.time_remaining = max(0, self.QUESTION_DURATION_SECONDS - elapsed)
+
+        if self.time_remaining == 0:
+            self.total_attempts += 1
+            self.feedback_msg = "TIME'S UP!"
+            self.feedback_color = (240, 75, 75)
+            self.generate_new_card()
 
     def render(self, screen):
         screen.fill((25, 29, 37))
@@ -93,6 +104,11 @@ class GameEngine:
         card_str = f"{self.num_a}  {self.operator}  {self.num_b}"
         card_surf = self.font_card.render(card_str, True, (25, 30, 42))
         screen.blit(card_surf, (card_rect.centerx - card_surf.get_width() // 2, card_rect.centery - card_surf.get_height() // 2))
+
+        timer_rect = pygame.Rect(card_rect.centerx - 130, 215, 260, 8)
+        timer_width = int(timer_rect.width * self.time_remaining / self.QUESTION_DURATION_SECONDS)
+        pygame.draw.rect(screen, (215, 225, 220), timer_rect, border_radius=4)
+        pygame.draw.rect(screen, (80, 180, 110), (timer_rect.x, timer_rect.y, timer_width, timer_rect.height), border_radius=4)
 
         self.input_box.render(screen)
 
