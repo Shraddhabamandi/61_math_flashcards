@@ -12,6 +12,8 @@ class GameEngine:
 
         self.score = 0
         self.total_attempts = 0
+        self.streak = 0
+        self.multiplier = 1
         self.feedback_msg = "Solve the card and press Enter!"
         self.feedback_color = (200, 205, 215)
 
@@ -41,6 +43,10 @@ class GameEngine:
         self.question_started_at = pygame.time.get_ticks()
         self.time_remaining = self.QUESTION_DURATION_SECONDS
 
+    def reset_streak(self):
+        self.streak = 0
+        self.multiplier = 1
+
     def compute_expected_answer(self):
         if self.operator == "+":
             return self.num_a + self.num_b
@@ -60,11 +66,14 @@ class GameEngine:
         self.total_attempts += 1
 
         if user_answer == expected:
-            self.score += 1
+            self.streak += 1
+            self.multiplier = min(self.streak, 5)
+            self.score += self.multiplier
             self.feedback_msg = f"CORRECT! {self.num_a} {self.operator} {self.num_b} = {expected}"
             self.feedback_color = (80, 230, 110)
             self.generate_new_card()
         else:
+            self.reset_streak()
             self.feedback_msg = f"WRONG! Expected {expected}."
             self.feedback_color = (240, 75, 75)
             self.input_box.clear()
@@ -84,6 +93,7 @@ class GameEngine:
 
         if self.time_remaining == 0:
             self.total_attempts += 1
+            self.reset_streak()
             self.feedback_msg = "TIME'S UP!"
             self.feedback_color = (240, 75, 75)
             self.generate_new_card()
@@ -94,8 +104,9 @@ class GameEngine:
         title_surf = self.font_title.render("Math Flashcards Arena", True, (245, 245, 245))
         screen.blit(title_surf, (self.width // 2 - title_surf.get_width() // 2, 18))
 
-        score_surf = self.font_hud.render(f"Score: {self.score} / {self.total_attempts}", True, (255, 220, 80))
-        screen.blit(score_surf, (self.width // 2 - score_surf.get_width() // 2, 58))
+        hud_text = f"Score: {self.score} / {self.total_attempts}  |  Streak: {self.streak}  |  Multiplier: {self.multiplier}x"
+        hud_surf = self.font_hud.render(hud_text, True, (255, 220, 80))
+        screen.blit(hud_surf, (self.width // 2 - hud_surf.get_width() // 2, 58))
 
         card_rect = pygame.Rect(self.width // 2 - 130, 95, 260, 110)
         pygame.draw.rect(screen, (240, 242, 245), card_rect, border_radius=12)
